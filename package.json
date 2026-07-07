@@ -25,5 +25,13 @@
     "ssot"
   ],
   "license": "MIT",
-  "author": "yyamamoto95"
+  "author": "yyamamoto95",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yyamamoto95/dev-framework.git"
+  },
+  "homepage": "https://github.com/yyamamoto95/dev-framework#readme",
+  "bugs": {
+    "url": "https://github.com/yyamamoto95/dev-framework/issues"
+  }
 }
