@@ -1,0 +1,133 @@
+# ============================================================
+# security-scan-issue.yml — CVE 検出時に GitHub Issue を自動作成する
+#
+# フロー:
+#   1. Trivy FS スキャンを実行（JSON 形式で出力）
+#   2. 各 CVE に対して Open Issue が存在するか確認
+#   3. 存在しない CVE（HIGH/CRITICAL）に対して Issue を新規作成
+#
+# ─ pr-checks.yml との役割分担 ────────────────────────────────
+#   pr-checks.yml: PR 時に即時検知 → 同ジョブ内で Issue 作成（P1 で起票）
+#   このワークフロー: 定期スキャンで見落とし検知（週次 + 手動実行）
+#
+# 実行タイミング:
+#   - 毎週月曜 09:00 UTC（定期スキャン・見落とし防止）
+#   - workflow_dispatch（手動実行）
+# ============================================================
+
+name: Security Scan - CVE Issue Creator
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scan-and-report:
+    name: Scan and Create Issues
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run Trivy filesystem scan (JSON)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: current-scan.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          # スキャン除外ディレクトリ（プロジェクトに応じて設定。例: usr/local/lib/node_modules/npm）
+          # skip-dirs: 
+
+      - name: Create Issues for CVEs without existing tracking
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 << 'PYEOF'
+          import json, subprocess, sys
+          from datetime import datetime, timezone
+
+          try:
+              with open('current-scan.json') as f:
+                  data = json.load(f)
+          except Exception as e:
+              print(f"JSON 読み込みエラー: {e}")
+              sys.exit(0)
+
+          vulns = []
+          for result in data.get('Results', []):
+              for v in result.get('Vulnerabilities') or []:
+                  if v.get('Severity') in ('HIGH', 'CRITICAL'):
+                      vulns.append(v)
+
+          if not vulns:
+              print("HIGH/CRITICAL の CVE なし。スキャン完了。")
+              sys.exit(0)
+
+          print(f"検出された HIGH/CRITICAL CVE: {len(vulns)} 件")
+          created = 0
+
+          for v in vulns:
+              cve_id = v.get('VulnerabilityID', '')
+              pkg = v.get('PkgName', '')
+              severity = v.get('Severity', '')
+              installed = v.get('InstalledVersion', '不明')
+              fixed = v.get('FixedVersion', '未リリース')
+              description = (v.get('Description') or 'N/A')[:300]
+              url = v.get('PrimaryURL', 'N/A')
+
+              # 重複チェック: 同一 CVE_ID の Open Issue が存在する場合はスキップ
+              result = subprocess.run(
+                  ['gh', 'issue', 'list', '--state', 'open',
+                   '--search', f'"{cve_id}" in:title',
+                   '--json', 'number', '--jq', 'length'],
+                  capture_output=True, text=True
+              )
+              if result.stdout.strip() != '0':
+                  print(f"{cve_id}: Open Issue 既存のためスキップ")
+                  continue
+
+              now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+              body = f"""## 概要
+
+          定期 Security Scan (Trivy) が HIGH/CRITICAL CVE を検知しました。
+
+          ## 詳細
+
+          - 影響パッケージ: {pkg} {installed} → 修正版: {fixed}
+          - 深刻度: {severity}
+          - 説明: {description}
+          - 参照: {url}
+
+          ## 対応方針
+
+          - 影響パッケージのアップデートを検討する（パッケージマネージャの override 機能で固定バージョンを指定）
+          - 修正版が未リリースの場合は `.trivyignore` に理由コメントとともに追記する
+
+          _自動作成: security-scan-issue.yml — {now}_"""
+
+              priority = 'priority: P0' if severity == 'CRITICAL' else \
+                         'priority: P1' if severity == 'HIGH' else \
+                         'priority: P2'
+
+              subprocess.run([
+                  'gh', 'issue', 'create',
+                  '--title', f'[{severity}] {cve_id} が {pkg} で検出されました',
+                  '--label', 'type: chore',
+                  '--label', priority,
+                  '--label', 'size: S',
+                  '--label', 'backlog',
+                  '--body', body,
+              ], check=False)
+              print(f"{cve_id}: Issue 作成完了")
+              created += 1
+
+          print(f"\n完了: {created} 件の新規 Issue を作成しました")
+          PYEOF

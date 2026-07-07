@@ -1,0 +1,50 @@
+# ============================================================
+# ai-review-triage.yml — Gemini レビュー検知 → ラベル付け
+#
+# 役割: Gemini Code Assist のレビュー投稿を検知して
+#       "needs-ai-triage" ラベルを PR に付与するだけ。
+#
+# 実際のトリアージ処理は AI エージェントの /pr-triage スキルが行う。
+# → .github/skills/pr-triage.md を参照
+# ============================================================
+
+name: AI Review Triage — Label
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    name: needs-ai-triage ラベルを付与する
+    if: github.event.review.user.login == 'gemini-code-assist[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: ラベルを付与する
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # ラベルが存在しない場合は作成する
+          gh label create "needs-ai-triage" \
+            --color "E4B429" \
+            --description "Gemini Code Assist のレビュー待ちトリアージ" \
+            --repo "$REPO" 2>/dev/null || true
+
+          gh label create "ai-triaged" \
+            --color "0E8A16" \
+            --description "AI トリアージ完了" \
+            --repo "$REPO" 2>/dev/null || true
+
+          # PR にラベルを付与する
+          gh pr edit "$PR_NUMBER" \
+            --add-label "needs-ai-triage" \
+            --repo "$REPO"
+
+          echo "PR #${PR_NUMBER} に needs-ai-triage ラベルを付与しました"

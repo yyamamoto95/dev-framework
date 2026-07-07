@@ -1,0 +1,175 @@
+name: Sync Project Board
+
+# ──────────────────────────────────────────────────────────────────
+# スクラムボードの自動ステータス管理
+#
+# トリガーと遷移先:
+#   Issue opened          → Status: Backlog（プロジェクトへ自動追加）
+#   PR opened/reopened/synchronize → リンク Issue の Status: In Review
+#   PR closed (not merged)→ リンク Issue の Status: Sprint Backlog（差し戻し）
+#
+# ※ PR merged 時の Issue → Done 遷移は sync-project-status.yml が担当
+#    (issues.closed イベントで処理。"Closes #N" による自動クローズと連動)
+#
+# ── ワークフロー責務マップ ───────────────────────────────────────────
+#   project-board-sync.yml: Issue/PR のライフサイクル Status 管理
+#   measure-cycle-time.yml: CT・Sprint#・SP プロジェクトフィールド更新
+#   sync-project-status.yml: Issue close → Status: Done
+#   set-sprint-number.yml:  sprint-backlog 付与 → Sprint # フィールド設定
+#   ※ velocity は pull 型導出（.github/scripts/velocity-report.sh）。git への自動コミットは行わない
+#
+# ── PROJECT_TOKEN について ─────────────────────────────────────────
+#   ProjectV2 フィールド更新には project スコープの PAT が必要。
+#   GITHUB_TOKEN は ProjectV2 mutations を実行できないため代替不可。
+#   PAT は Settings → Secrets → PROJECT_TOKEN として登録する。
+# ──────────────────────────────────────────────────────────────────
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize, closed]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_ID: ${{ vars.PROJECT_ID }}
+          STATUS_FIELD_ID: ${{ vars.PROJECT_STATUS_FIELD_ID }}
+          # Status 選択肢 ID（GitHub Project の Settings → Fields → Status で確認可能）
+          STATUS_BACKLOG: ${{ vars.PROJECT_STATUS_BACKLOG }}
+          STATUS_SPRINT_BACKLOG: ${{ vars.PROJECT_STATUS_SPRINT_BACKLOG }}
+          STATUS_IN_REVIEW: ${{ vars.PROJECT_STATUS_IN_REVIEW }}
+          STATUS_DONE: ${{ vars.PROJECT_STATUS_DONE }}
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectId    = process.env.PROJECT_ID;
+            const fieldId      = process.env.STATUS_FIELD_ID;
+            const OPT_BACKLOG        = process.env.STATUS_BACKLOG;
+            const OPT_SPRINT_BACKLOG = process.env.STATUS_SPRINT_BACKLOG;
+            const OPT_IN_REVIEW      = process.env.STATUS_IN_REVIEW;
+            const OPT_DONE           = process.env.STATUS_DONE;
+
+            // ── ヘルパー: Issue を Project に追加し、アイテム ID を返す ──────────
+            async function addIssueToProject(issueNodeId) {
+              const res = await github.graphql(`
+                mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                    item { id }
+                  }
+                }`, { projectId, contentId: issueNodeId });
+              return res.addProjectV2ItemById.item.id;
+            }
+
+            // ── ヘルパー: Project 内の Issue アイテム ID を検索（ページネーション対応）──
+            async function findProjectItemId(issueNumber) {
+              let cursor = null;
+              while (true) {
+                const res = await github.graphql(`
+                  query($projectId: ID!, $cursor: String) {
+                    node(id: $projectId) {
+                      ... on ProjectV2 {
+                        items(first: 100, after: $cursor) {
+                          pageInfo { hasNextPage endCursor }
+                          nodes {
+                            id
+                            content {
+                              ... on Issue { number }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`, { projectId, cursor });
+                const { items } = res.node;
+                const found = items.nodes.find(n => n.content?.number === issueNumber);
+                if (found) return found.id;
+                if (!items.pageInfo.hasNextPage) break;
+                cursor = items.pageInfo.endCursor;
+              }
+              return null;
+            }
+
+            // ── ヘルパー: Status を更新 ──────────────────────────────────────────
+            async function setStatus(itemId, optionId) {
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }`, { projectId, itemId, fieldId, optionId });
+            }
+
+            // ── ヘルパー: PR body からリンク Issue 番号を抽出 ───────────────────
+            function extractLinkedIssues(body) {
+              if (!body) return [];
+              const pattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+              const numbers = [];
+              let match;
+              while ((match = pattern.exec(body)) !== null) {
+                numbers.push(parseInt(match[1], 10));
+              }
+              return [...new Set(numbers)];
+            }
+
+            try {
+              // ── Issue opened: プロジェクトに追加して Backlog に設定 ──────────────
+              if (context.eventName === 'issues' && context.payload.action === 'opened') {
+                const issue = context.payload.issue;
+                console.log(`Issue #${issue.number} opened → adding to project as Backlog`);
+                const itemId = await addIssueToProject(issue.node_id);
+                await setStatus(itemId, OPT_BACKLOG);
+                console.log(`#${issue.number} → Backlog`);
+              }
+
+              // ── PR opened/reopened/ready_for_review/synchronize: リンク Issue → In Review ───
+              if (
+                context.eventName === 'pull_request' &&
+                ['opened', 'reopened', 'ready_for_review', 'synchronize'].includes(context.payload.action)
+              ) {
+                const pr = context.payload.pull_request;
+                const issues = extractLinkedIssues(pr.body);
+                console.log(`PR #${pr.number} updated → linked issues: ${issues}`);
+                for (const num of issues) {
+                  const itemId = await findProjectItemId(num);
+                  if (itemId) {
+                    await setStatus(itemId, OPT_IN_REVIEW);
+                    console.log(`#${num} → In Review`);
+                  } else {
+                    console.log(`#${num} not found in project, skipping`);
+                  }
+                }
+              }
+
+              // ── PR closed (not merged): リンク Issue → Sprint Backlog（差し戻し）──
+              // PR merged 時の Done 遷移は sync-project-status.yml が担当
+              if (context.eventName === 'pull_request' && context.payload.action === 'closed') {
+                const pr = context.payload.pull_request;
+                if (pr.merged) {
+                  console.log(`PR #${pr.number} merged → Done 遷移は sync-project-status.yml が処理`);
+                  return;
+                }
+                const issues = extractLinkedIssues(pr.body);
+                console.log(`PR #${pr.number} closed (not merged) → linked issues: ${issues}`);
+                for (const num of issues) {
+                  const itemId = await findProjectItemId(num);
+                  if (itemId) {
+                    await setStatus(itemId, OPT_SPRINT_BACKLOG);
+                    console.log(`#${num} → Sprint Backlog (reverted)`);
+                  }
+                }
+              }
+            } catch (error) {
+              if (error.status === 401 || error.status === 403) {
+                core.warning(`Project board sync skipped: PROJECT_TOKEN is unavailable or invalid (${error.status}).`);
+                return;
+              }
+              throw error;
+            }

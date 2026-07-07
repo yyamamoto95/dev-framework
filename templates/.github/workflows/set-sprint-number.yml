@@ -1,0 +1,72 @@
+name: sprint-backlog ラベル付与時にプロジェクトボードの Sprint # フィールドを設定する
+
+# ──────────────────────────────────────────────────────────────────
+# Issue に sprint-backlog ラベルが付与された瞬間に発火し、
+# GitHub Variable CURRENT_SPRINT（スプリント番号の SSOT）を読み取って
+# Project の Sprint # フィールドに書き込む。
+#
+# 必要なシークレット:
+#   PROJECT_TOKEN: project スコープを持つ Personal Access Token (classic)
+# 必要な Variables:
+#   CURRENT_SPRINT: 現在のスプリント番号（/sprint-start が gh variable set で更新）
+# ──────────────────────────────────────────────────────────────────
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  set-sprint-number:
+    if: github.event.label.name == 'sprint-backlog'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sprint # を GitHub Variable から取得してプロジェクトフィールドに設定する
+        env:
+          # ProjectV2 mutations には project スコープの PAT が必要（GITHUB_TOKEN では不可）
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_ID: ${{ vars.PROJECT_ID }}
+          SPRINT_FIELD_ID: ${{ vars.PROJECT_SPRINT_FIELD_ID }}
+          CURRENT_SPRINT: ${{ vars.CURRENT_SPRINT }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          if [ -z "${CURRENT_SPRINT}" ]; then
+            echo "GitHub Variable CURRENT_SPRINT が未設定のためスキップします。"
+            echo "gh variable set CURRENT_SPRINT --body \"{番号}\" で設定してください。"
+            exit 0
+          fi
+
+          echo "現在のスプリント番号: $CURRENT_SPRINT"
+
+          # Issue をプロジェクトに追加（既存の場合は既存アイテム ID を返す）
+          ITEM_ID=$(gh api graphql \
+            -f query='
+            mutation($projectId: ID!, $contentId: ID!) {
+              addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                item { id }
+              }
+            }' \
+            -f projectId="$PROJECT_ID" \
+            -f contentId="$ISSUE_NODE_ID" \
+            --jq '.data.addProjectV2ItemById.item.id')
+
+          echo "プロジェクトアイテム ID: $ITEM_ID"
+
+          # Sprint # フィールドを設定
+          gh api graphql \
+            -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldValue!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: $value
+              }) { projectV2Item { id } }
+            }' \
+            -f projectId="$PROJECT_ID" \
+            -f itemId="$ITEM_ID" \
+            -f fieldId="$SPRINT_FIELD_ID" \
+            -F "value[number]=$CURRENT_SPRINT"
+
+          echo "完了: Issue #${ISSUE_NUMBER} の Sprint # を ${CURRENT_SPRINT} に設定しました"

@@ -1,0 +1,66 @@
+name: backlog Issue に priority ラベルがない場合に priority:P2 を自動付与する
+
+# Issue が作成・編集・ラベル変更されたときに起動する。
+# backlog ラベルを持ち、priority: P? ラベルが未設定の Issue に priority: P2 を付与する。
+on:
+  issues:
+    types:
+      - opened
+      - labeled
+      - unlabeled
+      - edited
+
+jobs:
+  auto-priority:
+    name: priority 未設定 Issue に P2 を付与
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: priority ラベルが未設定かつ backlog ラベルがあるか確認して付与
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          # Issue のラベル一覧を取得
+          LABELS=$(gh issue view "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json labels \
+            --jq '[.labels[].name]')
+
+          echo "Issue #${ISSUE_NUMBER} のラベル: $LABELS"
+
+          # retro / retro-action ラベルがある場合はスキップ（スプリント管理ラベルは対象外）
+          HAS_RETRO=$(echo "$LABELS" | python3 -c "
+          import json, sys
+          labels = json.load(sys.stdin)
+          print('true' if any(l in labels for l in ['retro', 'retro-action']) else 'false')
+          ")
+          if [ "$HAS_RETRO" = "true" ]; then
+            echo "retro/retro-action ラベルのある Issue のためスキップします。"
+            exit 0
+          fi
+
+          # backlog ラベルの有無と priority: ラベルの有無を確認
+          RESULT=$(echo "$LABELS" | python3 -c "
+          import json, sys
+          labels = json.load(sys.stdin)
+          has_backlog = 'backlog' in labels
+          has_priority = any(l.startswith('priority:') for l in labels)
+          print(f'has_backlog={has_backlog},has_priority={has_priority}')
+          ")
+
+          echo "$RESULT"
+          HAS_BACKLOG=$(echo "$RESULT" | grep -oP '(?<=has_backlog=)\w+')
+          HAS_PRIORITY=$(echo "$RESULT" | grep -oP '(?<=has_priority=)\w+')
+
+          if [ "$HAS_BACKLOG" = "True" ] && [ "$HAS_PRIORITY" = "False" ]; then
+            echo "priority ラベルが未設定のため priority: P2 を付与します..."
+            gh issue edit "$ISSUE_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --add-label "priority: P2"
+            echo "完了: Issue #${ISSUE_NUMBER} に priority: P2 を付与しました。"
+          else
+            echo "付与条件を満たさないためスキップします（has_backlog=$HAS_BACKLOG, has_priority=$HAS_PRIORITY）。"
+          fi

@@ -1,0 +1,87 @@
+# ============================================================
+# sync-project-status.yml — Issue クローズ時にプロジェクトボードの
+# Status を「Done」へ自動遷移する
+#
+# トリガー: issues.closed
+# 必要シークレット: PROJECT_TOKEN（プロジェクトの read/write 権限）
+# ============================================================
+
+name: Sync Project Status on Issue Close
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: read
+
+jobs:
+  sync-status:
+    name: Status を Done に更新
+    runs-on: ubuntu-latest
+    steps:
+      - name: プロジェクトボードの Status を Done に設定
+        uses: actions/github-script@v8
+        env:
+          PROJECT_ID: ${{ vars.PROJECT_ID }}
+          STATUS_FIELD_ID: ${{ vars.PROJECT_STATUS_FIELD_ID }}
+          DONE_OPTION_ID: ${{ vars.PROJECT_STATUS_DONE }}
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const PROJECT_ID = process.env.PROJECT_ID;
+            const STATUS_FIELD_ID = process.env.STATUS_FIELD_ID;
+            const DONE_OPTION_ID = process.env.DONE_OPTION_ID;
+
+            const issueNumber = context.issue.number;
+
+            // プロジェクト内の対応アイテムを検索
+            let itemId = null;
+            let cursor = null;
+
+            while (true) {
+              const res = await github.graphql(`
+                query($projectId: ID!, $cursor: String) {
+                  node(id: $projectId) {
+                    ... on ProjectV2 {
+                      items(first: 100, after: $cursor) {
+                        pageInfo { hasNextPage endCursor }
+                        nodes {
+                          id
+                          content {
+                            ... on Issue { number }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { projectId: PROJECT_ID, cursor });
+
+              const { items } = res.node;
+              const found = items.nodes.find(n => n.content?.number === issueNumber);
+              if (found) {
+                itemId = found.id;
+                break;
+              }
+              if (!items.pageInfo.hasNextPage) break;
+              cursor = items.pageInfo.endCursor;
+            }
+
+            if (!itemId) {
+              console.log(`Issue #${issueNumber} はプロジェクトに登録されていません。スキップします。`);
+              return;
+            }
+
+            await github.graphql(`
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldValue!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: $value
+                }) { projectV2Item { id } }
+              }`, {
+              projectId: PROJECT_ID,
+              itemId,
+              fieldId: STATUS_FIELD_ID,
+              value: { singleSelectOptionId: DONE_OPTION_ID },
+            });
+
+            console.log(`Issue #${issueNumber}: プロジェクトボードの Status を Done に更新しました`);

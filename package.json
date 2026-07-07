@@ -1,0 +1,29 @@
+{
+  "name": "create-dev-framework",
+  "version": "0.1.0",
+  "description": "AI駆動・振る舞い駆動・仕様駆動の開発とAIエージェントスクラム運用（1日1スプリント・SSOT）を新規プロジェクトへ scaffold する CLI",
+  "type": "module",
+  "bin": {
+    "create-dev-framework": "bin/create.mjs"
+  },
+  "files": [
+    "bin",
+    "templates",
+    "presets",
+    "CUSTOMIZATION.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "scaffold",
+    "template",
+    "scrum",
+    "bdd",
+    "ai-agent",
+    "claude-code",
+    "ssot"
+  ],
+  "license": "MIT",
+  "author": "yyamamoto95"
+}
