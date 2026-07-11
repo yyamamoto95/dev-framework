@@ -1,0 +1,97 @@
+{
+  "$schema": "https://unpkg.com/flow-wireframe/schema/flow-wireframe.schema.json",
+  "title": "create-dev-framework 業務フロー ワイヤーフレーム",
+  "description": "scaffolding CLI の導入体験と、導入後の1日1スプリント運用サイクルを見える化したもの。ID の DF-1xx は導入系、DF-2xx は運用系。",
+  "version": "0.1.0",
+  "accent": "#7c3aed",
+  "screens": [
+    {
+      "id": "scaffold",
+      "name": "導入コマンド（対話プロンプト）",
+      "layout": "terminal",
+      "note": "対象プロジェクトのルートで実行する。引数を省くと対話プロンプトで補完される。既存ファイルは上書きしない。",
+      "elements": [
+        { "type": "console", "label": "実行と対話", "lines": [
+          "$ pnpm create dev-framework",
+          "? GitHub オーナー名: yyamamoto95",
+          "? ProjectV2 の番号（例: 1）: 1",
+          "? プロダクト名: 家計簿アプリ",
+          "? TS モノレポ向けプリセットも導入する? [y/N]: y"
+        ], "note": "引数（--owner 等）を渡せば対話をスキップできる（CI や再実行に向く）" },
+        { "type": "console", "label": "展開結果", "lines": [
+          "=== 導入完了 ===",
+          "コピー: 42 ファイル / スキップ（既存）: 3 ファイル",
+          "  skip: .github/spec/product.md"
+        ], "note": "既存ファイルはスキップされるため、再実行・部分導入しても安全" },
+        { "type": "text", "label": "続けて、GitHub Project 作成・Variables・PROJECT_TOKEN・ラベルなどの残作業が具体的なコマンド付きで表示される", "muted": true }
+      ]
+    },
+    {
+      "id": "doctor",
+      "name": "doctor（導入診断）",
+      "layout": "terminal",
+      "note": "残作業が完了したかをセルフチェックする。NG が残ると CI の観測（サイクルタイム・velocity・ボード同期）が欠落する。",
+      "elements": [
+        { "type": "console", "lines": [
+          "$ npx create-dev-framework doctor",
+          "=== create-dev-framework doctor ===",
+          "対象リポジトリ: yyamamoto95/budget-management-tool",
+          "✅ gh CLI",
+          "✅ GitHub Project (ProjectV2)",
+          "❌ GitHub Variable CURRENT_SPRINT",
+          "     → gh variable set CURRENT_SPRINT --body 1",
+          "=== 結果: NG 1 件 ==="
+        ], "note": "NG には解消コマンドがそのまま表示される" },
+        { "type": "badge", "label": "すべて✅なら「/sprint-start でスプリントを開始できます」", "tone": "good" }
+      ]
+    },
+    {
+      "id": "project-docs",
+      "name": "導入後のプロジェクト（3層ドキュメント）",
+      "layout": "desktop",
+      "note": "spec/=WHAT、rules/=HOW、decisions/=WHY の3層。雛形は器であり、WHAT/WHY は各プロジェクトが記述する。",
+      "elements": [
+        { "type": "header", "label": ".github/（開発体制の SSOT）" },
+        { "type": "list", "label": "フレームワークの核（変更は本体へPR還流）", "items": ["sprint-protocol.md — 1日1スプリント・SSOTマップ", "workflows/ — プロセス系CI 7本", "skills/ — /branch /commit /pr /sprint-start 等 9本"] },
+        { "type": "list", "label": "必ず書く（あなたのプロダクトの中身）", "items": ["spec/ — プロダクト仕様・BDDストーリー", "decisions/ — ADR", "design/ — UI/UX・データモデル"] },
+        { "type": "text", "label": "CUSTOMIZATION.md に「どこを変え、どこを変えないか」の分類表がある", "muted": true }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "DF-101",
+      "name": "新規プロジェクトに開発体制を導入する",
+      "actor": "開発者",
+      "description": "テンプレート取得から診断完了まで。外部リポジトリへの実行時依存を持たない自己完結スキャフォールド。",
+      "scenario": {
+        "given": ["対象プロジェクトの git リポジトリのルートにいる"],
+        "when": ["pnpm create dev-framework を実行し、対話プロンプトに答える", "案内された残作業（Project 作成・Variables 等）を済ませ、doctor で確認する"],
+        "then": ["3層ドキュメント・CI・スキル一式が展開される（既存ファイルは上書きされない）", "doctor がすべて ✅ になり、/sprint-start でスプリントを開始できる"]
+      },
+      "steps": [
+        { "screen": "scaffold", "action": "対話に答えて展開", "result": "42ファイルが自己完結でコピーされる" },
+        { "process": "残作業（Project作成・Variables・ラベル）", "actor": "開発者 + gh CLI", "action": "doctor で確認" },
+        { "screen": "doctor", "action": "NG を解消コマンドで潰す", "result": "すべて ✅ に" },
+        { "screen": "project-docs", "result": "spec/ に WHAT を書き始められる状態" }
+      ]
+    },
+    {
+      "id": "DF-201",
+      "name": "1日1スプリントを回す（導入後の運用）",
+      "actor": "開発者 + AIエージェント",
+      "description": "PBI 単位のスプリントサイクル。計測は GitHub Actions が自動で行い、実績は pull 型で導出する。サイクルの終端は次のスプリントの起点に戻る（ループ）。",
+      "scenario": {
+        "given": ["導入が完了し、バックログに PBI がある"],
+        "when": ["/sprint-start でスプリントを開始し、実装 → /commit → /pr → マージまで進める", "/sprint-close でレトロスペクティブを記録する"],
+        "then": ["サイクルタイムが Issue と Project ボードに自動記録される", "Retro Issue と改善アクションが次スプリントのバックログに積まれる"]
+      },
+      "steps": [
+        { "process": "/sprint-start", "actor": "AIエージェント", "action": "PBI に in-progress ラベル", "result": "サイクルタイム計測が開始" },
+        { "process": "実装 → /commit → /pr", "actor": "AIエージェント", "action": "レビューを経てマージ" },
+        { "process": "GH Actions が自動計測", "actor": "システム", "action": "/sprint-close", "result": "Cycle Time / Sprint# / Story Points をボードへ記録" },
+        { "process": "Retro Issue 起票", "actor": "AIエージェント", "result": "Try が retro-action として次スプリントの起点に戻る（ループ）" }
+      ]
+    }
+  ]
+}
