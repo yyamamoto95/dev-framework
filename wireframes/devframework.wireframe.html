@@ -7,43 +7,56 @@
 <style>
 :root {
   --accent: #7c3aed;
-  --ink: #1f2937;
-  --muted: #6b7280;
-  --line: #d1d5db;
-  --paper: #f8fafc;
-  --sketch: #9ca3af;
-  --good: #047857;
+  --ink: #232a31;          /* 製図インク: 青みの近黒 */
+  --muted: #5d6773;
+  --line: #d5dbe1;
+  --hairline: #e4e9ee;
+  --paper: #f3f5f7;        /* 方眼紙の地: クールグレー */
+  --surface: #ffffff;
+  --grid: rgba(35, 42, 49, .045);
+  --sketch: #9aa4ad;
+  --good: #0b7a58;
   --caution: #b45309;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--paper);
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    var(--paper);
+  background-size: 24px 24px, 24px 24px, auto;
   font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", Meiryo, system-ui, sans-serif;
-  line-height: 1.6;
+  line-height: 1.65;
+  font-feature-settings: "palt";
 }
-main { max-width: 1080px; margin: 0 auto; padding: 0 20px 60px; }
-h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48px; }
+main { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+table { font-variant-numeric: tabular-nums; }
+h2 { font-size: 21px; letter-spacing: .02em; border-bottom: 1px solid var(--ink); padding-bottom: 8px; margin: 56px 0 20px; position: relative; }
+h2::before { content: ""; position: absolute; left: 0; bottom: -1px; width: 56px; border-bottom: 3px solid var(--accent); }
+h3 { font-size: 16px; letter-spacing: .01em; }
 
-.wf-doc-header { background: var(--ink); color: #fff; padding: 28px 20px; }
-.wf-doc-header h1 { margin: 0 auto; max-width: 1080px; font-size: 24px; }
-.wf-doc-desc, .wf-doc-meta { max-width: 1080px; margin: 6px auto 0; opacity: .85; font-size: 13px; }
-.wf-doc-footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
+/* 図面のタイトルブロック風ヘッダー */
+.wf-doc-header { max-width: 1080px; margin: 28px auto 8px; padding: 0 20px; }
+.wf-doc-header h1 { margin: 0; font-size: 27px; letter-spacing: .01em; line-height: 1.35; text-wrap: balance; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); padding: 18px 2px 14px; }
+.wf-doc-desc { margin: 10px 2px 0; color: var(--muted); font-size: 13.5px; max-width: 72ch; }
+.wf-doc-meta { display: inline-block; margin: 12px 2px 0; font-size: 11.5px; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); background: var(--surface); border-radius: 3px; padding: 3px 12px; }
+.wf-doc-footer { text-align: center; color: var(--muted); font-size: 11.5px; letter-spacing: .04em; padding: 28px 20px 36px; }
 
 /* 読み方・目次 */
-.wf-legend { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px; margin-top: 24px; }
+.wf-legend { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 18px; margin-top: 24px; }
 .wf-legend summary { cursor: pointer; font-weight: 700; }
 .wf-legend li { margin: 6px 0; font-size: 14px; }
-.wf-toc { display: flex; gap: 32px; flex-wrap: wrap; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 12px 20px; margin-top: 16px; }
+.wf-toc { display: flex; gap: 48px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 22px; margin-top: 14px; }
 .wf-toc h4 { margin: 8px 0 4px; }
 .wf-toc ol { margin: 0; padding-left: 20px; font-size: 14px; }
 .wf-toc a { color: var(--ink); text-decoration: none; }
 .wf-toc a:hover { color: var(--accent); }
 
 /* フロー */
-.wf-flow-section, .wf-screen-section { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin: 20px 0; scroll-margin-top: 16px; }
-.wf-flow-id, .wf-screen-id { display: inline-block; background: var(--accent); color: #fff; border-radius: 4px; font-size: 12px; padding: 1px 8px; margin-right: 8px; vertical-align: 2px; }
+.wf-flow-section, .wf-screen-section { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px 22px; margin: 20px 0; scroll-margin-top: 16px; }
+.wf-flow-id, .wf-screen-id { display: inline-block; background: var(--accent); color: #fff; border-radius: 3px; font-size: 11.5px; letter-spacing: .05em; padding: 2px 9px; margin-right: 10px; vertical-align: 2px; font-variant-numeric: tabular-nums; }
 .wf-actor { float: right; font-size: 13px; font-weight: 400; color: var(--muted); }
 .wf-flow-desc { color: var(--muted); font-size: 14px; margin-top: 0; }
 .wf-strip { display: flex; align-items: flex-start; gap: 4px; overflow-x: auto; padding: 12px 4px 16px; }
@@ -89,6 +102,38 @@ h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48
 
 /* 外部サービスへの遷移マーク */
 .wf-external { margin-left: 4px; font-weight: 700; }
+
+/* ステップ(ノード+データ変化チップ) */
+.wf-step { display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 6px; }
+.wf-data-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 216px; }
+.wf-data-chip { display: inline-block; border-radius: 999px; font-size: 10px; font-weight: 700; padding: 1px 8px; text-decoration: none; border: 1px solid; }
+.wf-data-create { background: #ecfdf5; color: #047857; border-color: #047857; }
+.wf-data-read { background: #f3f4f6; color: #4b5563; border-color: #9ca3af; }
+.wf-data-update { background: #eff6ff; color: #1d4ed8; border-color: #1d4ed8; }
+.wf-data-delete { background: #fef2f2; color: #b91c1c; border-color: #b91c1c; }
+
+/* データカタログ・CRUDマトリクス・用語集 */
+.wf-crud-note { color: var(--muted); font-size: 13px; }
+.wf-crud-wrap { overflow-x: auto; }
+.wf-crud { border-collapse: collapse; background: var(--surface); font-size: 13px; }
+.wf-crud th, .wf-crud td { border: 1px solid var(--line); padding: 6px 12px; text-align: left; }
+.wf-crud td { text-align: center; min-width: 72px; }
+.wf-crud td .wf-data-chip { margin: 0 2px; padding: 1px 6px; }
+.wf-crud a { color: var(--ink); text-decoration: none; }
+.wf-crud a:hover { color: var(--accent); }
+.wf-entity { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 22px; margin: 16px 0; scroll-margin-top: 16px; }
+.wf-entity:target { outline: 3px solid var(--accent); animation: wf-flash 1.2s ease-out 1; }
+.wf-entity h4 { margin: 4px 0 8px; font-size: 15px; }
+.wf-entity-table { margin-left: 10px; font-size: 12px; font-weight: 400; background: #f3f4f6; border: 1px solid var(--line); border-radius: 4px; padding: 1px 8px; }
+.wf-entity-cols { border-collapse: collapse; font-size: 13px; margin: 6px 0; }
+.wf-entity-cols th { text-align: left; color: var(--muted); font-size: 12px; font-weight: 400; padding: 2px 14px 2px 0; border-bottom: 1px solid var(--line); }
+.wf-entity-cols td { padding: 3px 14px 3px 0; border-bottom: 1px dashed var(--line); }
+.wf-col-name { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+.wf-glossary-section { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 22px; }
+.wf-glossary { border-collapse: collapse; font-size: 14px; width: 100%; }
+.wf-glossary th { text-align: left; white-space: nowrap; padding: 8px 18px 8px 0; vertical-align: top; }
+.wf-glossary td { padding: 8px 12px 8px 0; border-bottom: 1px dashed var(--line); color: var(--ink); }
+.wf-glossary tr:last-child td { border-bottom: none; }
 
 /* ステップ間の矢印 */
 .wf-arrow { flex: 0 0 auto; align-self: center; display: flex; flex-direction: column; justify-content: center; min-width: 110px; max-width: 160px; text-align: center; padding: 0 6px; }
@@ -170,7 +215,6 @@ h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48
 
 @media print {
   body { background: #fff; }
-  .wf-doc-header { background: #fff; color: var(--ink); border-bottom: 3px solid var(--ink); }
   .wf-legend, .wf-toc { display: none; }
   .wf-flow-section, .wf-screen-section { break-inside: avoid; border: none; padding: 0; }
   .wf-strip { overflow: visible; flex-wrap: wrap; }
@@ -184,10 +228,10 @@ h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48
 <p class="wf-doc-meta">版: 0.1.0</p>
 </header>
 <main>
-<details class="wf-legend"><summary>この資料の読み方</summary><ul><li><strong>業務フロー</strong>: 画面の縮小図と矢印で「誰が・どの画面で・何をすると・どうなるか」を表します。矢印の上が<strong>操作</strong>、下が<strong>システムの応答</strong>です。</li><li><strong>ふるまい表</strong>: 各フローの下にある「前提・操作・結果」の表は、開発で使うテストシナリオ（Gherkin）と1対1で対応します。</li><li><strong>画面カタログ</strong>: フロー中の縮小図をクリックすると、その画面の実寸ワイヤーフレームへ移動します。</li><li><strong>青い枠のボタン・リンク</strong>はクリックできるホットスポットです。クリックすると遷移先の画面へ移動し、移動先が一瞬ハイライトされます。</li><li><strong>⚙ の角丸ボックス</strong>は画面を持たない処理（バッチ・自動化など）を表します。下のラベルは処理の主体です。</li><li><strong>↗</strong> は外部サービスへの遷移（このワイヤーフレームの範囲外）を表します。</li><li><strong>黒い枠</strong>は端末（CLI）画面です。<code>$</code> はコマンド、<code>?</code> は対話プロンプトを表します。</li><li>①②… の印は画面下の注釈と対応します。</li></ul></details>
+<details class="wf-legend"><summary>この資料の読み方</summary><ul><li><strong>業務フロー</strong>: 画面の縮小図と矢印で「誰が・どの画面で・何をすると・どうなるか」を表します。矢印の上が<strong>操作</strong>、下が<strong>システムの応答</strong>です。</li><li><strong>ふるまい表</strong>: 各フローの下にある「前提・操作・結果」の表は、開発で使うテストシナリオ（Gherkin）と1対1で対応します。</li><li><strong>画面カタログ</strong>: フロー中の縮小図をクリックすると、その画面の実寸ワイヤーフレームへ移動します。</li><li><strong>青い枠のボタン・リンク</strong>はクリックできるホットスポットです。クリックすると遷移先の画面へ移動し、移動先が一瞬ハイライトされます。</li><li><strong>⚙ の角丸ボックス</strong>は画面を持たない処理（バッチ・自動化など）を表します。下のラベルは処理の主体です。</li><li><strong>↗</strong> は外部サービスへの遷移（このワイヤーフレームの範囲外）を表します。</li><li><strong>黒い枠</strong>は端末（CLI）画面です。<code>$</code> はコマンド、<code>?</code> は対話プロンプトを表します。</li><li>フローの下の<strong>色付きチップ</strong>は、その操作でデータ（テーブル）がどう変わるかを表します（作成・参照・更新・削除）。詳細は巻末の CRUD マトリクスへ。</li><li>①②… の印は画面下の注釈と対応します。</li></ul></details>
 <nav class="wf-toc"><div><h4>業務フロー</h4><ol><li><a href="#flow-DF-101"><span class="wf-flow-id">DF-101</span>新規プロジェクトに開発体制を導入する</a></li><li><a href="#flow-DF-201"><span class="wf-flow-id">DF-201</span>1日1スプリントを回す（導入後の運用）</a></li></ol></div><div><h4>画面カタログ</h4><ol><li><a href="#screen-scaffold">導入コマンド（対話プロンプト）</a></li><li><a href="#screen-doctor">doctor（導入診断）</a></li><li><a href="#screen-project-docs">導入後のプロジェクト（3層ドキュメント）</a></li></ol></div></nav>
 <h2 id="flows">業務フロー</h2>
-<section class="wf-flow-section" id="flow-DF-101"><h3><span class="wf-flow-id">DF-101</span>新規プロジェクトに開発体制を導入する<span class="wf-actor">👤 開発者</span></h3><p class="wf-flow-desc">テンプレート取得から診断完了まで。外部リポジトリへの実行時依存を持たない自己完結スキャフォールド。</p><div class="wf-strip"><a class="wf-thumb wf-thumb-desktop" href="#screen-scaffold" title="クリックで画面の詳細へ"><span class="wf-thumb-no">1</span><span class="wf-thumb-scale"><div class="wf-frame-wrap wf-terminal"><div class="wf-frame"><div class="wf-terminal-bar"><span></span><span></span><span></span><i>導入コマンド（対話プロンプト）</i></div><div class="wf-el wf-console"><div class="wf-console-label">実行と対話</div><pre><span class="wf-console-cmd">$ pnpm create dev-framework</span>
+<section class="wf-flow-section" id="flow-DF-101"><h3><span class="wf-flow-id">DF-101</span>新規プロジェクトに開発体制を導入する<span class="wf-actor">👤 開発者</span></h3><p class="wf-flow-desc">テンプレート取得から診断完了まで。外部リポジトリへの実行時依存を持たない自己完結スキャフォールド。</p><div class="wf-strip"><span class="wf-step"><a class="wf-thumb wf-thumb-desktop" href="#screen-scaffold" title="クリックで画面の詳細へ"><span class="wf-thumb-no">1</span><span class="wf-thumb-scale"><div class="wf-frame-wrap wf-terminal"><div class="wf-frame"><div class="wf-terminal-bar"><span></span><span></span><span></span><i>導入コマンド（対話プロンプト）</i></div><div class="wf-el wf-console"><div class="wf-console-label">実行と対話</div><pre><span class="wf-console-cmd">$ pnpm create dev-framework</span>
 <span class="wf-console-prompt">? GitHub オーナー名: yyamamoto95</span>
 <span class="wf-console-prompt">? ProjectV2 の番号（例: 1）: 1</span>
 <span class="wf-console-prompt">? プロダクト名: 家計簿アプリ</span>
@@ -195,7 +239,7 @@ h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48
 <div class="wf-el wf-console"><div class="wf-console-label">展開結果</div><pre><span class="wf-console-out">=== 導入完了 ===</span>
 <span class="wf-console-out">コピー: 42 ファイル / スキップ（既存）: 3 ファイル</span>
 <span class="wf-console-out">  skip: .github/spec/product.md</span></pre></div>
-<p class="wf-el wf-text wf-muted">続けて、GitHub Project 作成・Variables・PROJECT_TOKEN・ラベルなどの残作業が具体的なコマンド付きで表示される</p></div></div></span><span class="wf-thumb-name">導入コマンド（対話プロンプト）</span></a><span class="wf-arrow"><span class="wf-arrow-action">対話に答えて展開</span><span class="wf-arrow-result">42ファイルが自己完結でコピーされる</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-process"><span class="wf-thumb-no">2</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">残作業（Project作成・Variables・ラベル）</span><span class="wf-process-actor">開発者 + gh CLI</span></span><span class="wf-arrow"><span class="wf-arrow-action">doctor で確認</span><span class="wf-arrow-line" aria-hidden="true"></span></span><a class="wf-thumb wf-thumb-desktop" href="#screen-doctor" title="クリックで画面の詳細へ"><span class="wf-thumb-no">3</span><span class="wf-thumb-scale"><div class="wf-frame-wrap wf-terminal"><div class="wf-frame"><div class="wf-terminal-bar"><span></span><span></span><span></span><i>doctor（導入診断）</i></div><div class="wf-el wf-console"><pre><span class="wf-console-cmd">$ npx create-dev-framework doctor</span>
+<p class="wf-el wf-text wf-muted">続けて、GitHub Project 作成・Variables・PROJECT_TOKEN・ラベルなどの残作業が具体的なコマンド付きで表示される</p></div></div></span><span class="wf-thumb-name">導入コマンド（対話プロンプト）</span></a></span><span class="wf-arrow"><span class="wf-arrow-action">対話に答えて展開</span><span class="wf-arrow-result">42ファイルが自己完結でコピーされる</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-step"><span class="wf-process"><span class="wf-thumb-no">2</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">残作業（Project作成・Variables・ラベル）</span><span class="wf-process-actor">開発者 + gh CLI</span></span></span><span class="wf-arrow"><span class="wf-arrow-action">doctor で確認</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-step"><a class="wf-thumb wf-thumb-desktop" href="#screen-doctor" title="クリックで画面の詳細へ"><span class="wf-thumb-no">3</span><span class="wf-thumb-scale"><div class="wf-frame-wrap wf-terminal"><div class="wf-frame"><div class="wf-terminal-bar"><span></span><span></span><span></span><i>doctor（導入診断）</i></div><div class="wf-el wf-console"><pre><span class="wf-console-cmd">$ npx create-dev-framework doctor</span>
 <span class="wf-console-out">=== create-dev-framework doctor ===</span>
 <span class="wf-console-out">対象リポジトリ: yyamamoto95/budget-management-tool</span>
 <span class="wf-console-out">✅ gh CLI</span>
@@ -203,11 +247,11 @@ h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48
 <span class="wf-console-out">❌ GitHub Variable CURRENT_SPRINT</span>
 <span class="wf-console-out">     → gh variable set CURRENT_SPRINT --body 1</span>
 <span class="wf-console-out">=== 結果: NG 1 件 ===</span></pre></div>
-<span class="wf-el wf-badge wf-badge-good">すべて✅なら「/sprint-start でスプリントを開始できます」</span></div></div></span><span class="wf-thumb-name">doctor（導入診断）</span></a><span class="wf-arrow"><span class="wf-arrow-action">NG を解消コマンドで潰す</span><span class="wf-arrow-result">すべて ✅ に</span><span class="wf-arrow-line" aria-hidden="true"></span></span><a class="wf-thumb wf-thumb-desktop" href="#screen-project-docs" title="クリックで画面の詳細へ"><span class="wf-thumb-no">4</span><span class="wf-thumb-scale"><div class="wf-frame-wrap wf-desktop"><div class="wf-frame"><div class="wf-browser-bar"><span></span><span></span><span></span><i>導入後のプロジェクト（3層ドキュメント）</i></div><div class="wf-el wf-header">.github/（開発体制の SSOT）</div>
+<span class="wf-el wf-badge wf-badge-good">すべて✅なら「/sprint-start でスプリントを開始できます」</span></div></div></span><span class="wf-thumb-name">doctor（導入診断）</span></a></span><span class="wf-arrow"><span class="wf-arrow-action">NG を解消コマンドで潰す</span><span class="wf-arrow-result">すべて ✅ に</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-step"><a class="wf-thumb wf-thumb-desktop" href="#screen-project-docs" title="クリックで画面の詳細へ"><span class="wf-thumb-no">4</span><span class="wf-thumb-scale"><div class="wf-frame-wrap wf-desktop"><div class="wf-frame"><div class="wf-browser-bar"><span></span><span></span><span></span><i>導入後のプロジェクト（3層ドキュメント）</i></div><div class="wf-el wf-header">.github/（開発体制の SSOT）</div>
 <div class="wf-el wf-list"><div class="wf-list-label">フレームワークの核（変更は本体へPR還流）</div><ul><li>sprint-protocol.md — 1日1スプリント・SSOTマップ</li><li>workflows/ — プロセス系CI 7本</li><li>skills/ — /branch /commit /pr /sprint-start 等 9本</li></ul></div>
 <div class="wf-el wf-list"><div class="wf-list-label">必ず書く（あなたのプロダクトの中身）</div><ul><li>spec/ — プロダクト仕様・BDDストーリー</li><li>decisions/ — ADR</li><li>design/ — UI/UX・データモデル</li></ul></div>
-<p class="wf-el wf-text wf-muted">CUSTOMIZATION.md に「どこを変え、どこを変えないか」の分類表がある</p></div></div></span><span class="wf-thumb-name">導入後のプロジェクト（3層ドキュメント）</span></a><span class="wf-flow-goal">🏁 spec/ に WHAT を書き始められる状態</span></div><details class="wf-gherkin" open><summary>ふるまい（Given / When / Then）</summary><table><tr class="wf-gherkin-given"><th>前提</th><td>対象プロジェクトの git リポジトリのルートにいる</td></tr><tr class="wf-gherkin-when"><th>操作</th><td>pnpm create dev-framework を実行し、対話プロンプトに答える</td></tr><tr class="wf-gherkin-when"><th>かつ</th><td>案内された残作業（Project 作成・Variables 等）を済ませ、doctor で確認する</td></tr><tr class="wf-gherkin-then"><th>結果</th><td>3層ドキュメント・CI・スキル一式が展開される（既存ファイルは上書きされない）</td></tr><tr class="wf-gherkin-then"><th>かつ</th><td>doctor がすべて ✅ になり、/sprint-start でスプリントを開始できる</td></tr></table></details></section>
-<section class="wf-flow-section" id="flow-DF-201"><h3><span class="wf-flow-id">DF-201</span>1日1スプリントを回す（導入後の運用）<span class="wf-actor">👤 開発者 + AIエージェント</span></h3><p class="wf-flow-desc">PBI 単位のスプリントサイクル。計測は GitHub Actions が自動で行い、実績は pull 型で導出する。サイクルの終端は次のスプリントの起点に戻る（ループ）。</p><div class="wf-strip"><span class="wf-process"><span class="wf-thumb-no">1</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">/sprint-start</span><span class="wf-process-actor">AIエージェント</span></span><span class="wf-arrow"><span class="wf-arrow-action">PBI に in-progress ラベル</span><span class="wf-arrow-result">サイクルタイム計測が開始</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-process"><span class="wf-thumb-no">2</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">実装 → /commit → /pr</span><span class="wf-process-actor">AIエージェント</span></span><span class="wf-arrow"><span class="wf-arrow-action">レビューを経てマージ</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-process"><span class="wf-thumb-no">3</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">GH Actions が自動計測</span><span class="wf-process-actor">システム</span></span><span class="wf-arrow"><span class="wf-arrow-action">/sprint-close</span><span class="wf-arrow-result">Cycle Time / Sprint# / Story Points をボードへ記録</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-process"><span class="wf-thumb-no">4</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">Retro Issue 起票</span><span class="wf-process-actor">AIエージェント</span></span><span class="wf-flow-goal">🏁 Try が retro-action として次スプリントの起点に戻る（ループ）</span></div><details class="wf-gherkin" open><summary>ふるまい（Given / When / Then）</summary><table><tr class="wf-gherkin-given"><th>前提</th><td>導入が完了し、バックログに PBI がある</td></tr><tr class="wf-gherkin-when"><th>操作</th><td>/sprint-start でスプリントを開始し、実装 → /commit → /pr → マージまで進める</td></tr><tr class="wf-gherkin-when"><th>かつ</th><td>/sprint-close でレトロスペクティブを記録する</td></tr><tr class="wf-gherkin-then"><th>結果</th><td>サイクルタイムが Issue と Project ボードに自動記録される</td></tr><tr class="wf-gherkin-then"><th>かつ</th><td>Retro Issue と改善アクションが次スプリントのバックログに積まれる</td></tr></table></details></section>
+<p class="wf-el wf-text wf-muted">CUSTOMIZATION.md に「どこを変え、どこを変えないか」の分類表がある</p></div></div></span><span class="wf-thumb-name">導入後のプロジェクト（3層ドキュメント）</span></a></span><span class="wf-flow-goal">🏁 spec/ に WHAT を書き始められる状態</span></div><details class="wf-gherkin" open><summary>ふるまい（Given / When / Then）</summary><table><tr class="wf-gherkin-given"><th>前提</th><td>対象プロジェクトの git リポジトリのルートにいる</td></tr><tr class="wf-gherkin-when"><th>操作</th><td>pnpm create dev-framework を実行し、対話プロンプトに答える</td></tr><tr class="wf-gherkin-when"><th>かつ</th><td>案内された残作業（Project 作成・Variables 等）を済ませ、doctor で確認する</td></tr><tr class="wf-gherkin-then"><th>結果</th><td>3層ドキュメント・CI・スキル一式が展開される（既存ファイルは上書きされない）</td></tr><tr class="wf-gherkin-then"><th>かつ</th><td>doctor がすべて ✅ になり、/sprint-start でスプリントを開始できる</td></tr></table></details></section>
+<section class="wf-flow-section" id="flow-DF-201"><h3><span class="wf-flow-id">DF-201</span>1日1スプリントを回す（導入後の運用）<span class="wf-actor">👤 開発者 + AIエージェント</span></h3><p class="wf-flow-desc">PBI 単位のスプリントサイクル。計測は GitHub Actions が自動で行い、実績は pull 型で導出する。サイクルの終端は次のスプリントの起点に戻る（ループ）。</p><div class="wf-strip"><span class="wf-step"><span class="wf-process"><span class="wf-thumb-no">1</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">/sprint-start</span><span class="wf-process-actor">AIエージェント</span></span></span><span class="wf-arrow"><span class="wf-arrow-action">PBI に in-progress ラベル</span><span class="wf-arrow-result">サイクルタイム計測が開始</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-step"><span class="wf-process"><span class="wf-thumb-no">2</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">実装 → /commit → /pr</span><span class="wf-process-actor">AIエージェント</span></span></span><span class="wf-arrow"><span class="wf-arrow-action">レビューを経てマージ</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-step"><span class="wf-process"><span class="wf-thumb-no">3</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">GH Actions が自動計測</span><span class="wf-process-actor">システム</span></span></span><span class="wf-arrow"><span class="wf-arrow-action">/sprint-close</span><span class="wf-arrow-result">Cycle Time / Sprint# / Story Points をボードへ記録</span><span class="wf-arrow-line" aria-hidden="true"></span></span><span class="wf-step"><span class="wf-process"><span class="wf-thumb-no">4</span><span class="wf-process-icon" aria-hidden="true">⚙</span><span class="wf-process-name">Retro Issue 起票</span><span class="wf-process-actor">AIエージェント</span></span></span><span class="wf-flow-goal">🏁 Try が retro-action として次スプリントの起点に戻る（ループ）</span></div><details class="wf-gherkin" open><summary>ふるまい（Given / When / Then）</summary><table><tr class="wf-gherkin-given"><th>前提</th><td>導入が完了し、バックログに PBI がある</td></tr><tr class="wf-gherkin-when"><th>操作</th><td>/sprint-start でスプリントを開始し、実装 → /commit → /pr → マージまで進める</td></tr><tr class="wf-gherkin-when"><th>かつ</th><td>/sprint-close でレトロスペクティブを記録する</td></tr><tr class="wf-gherkin-then"><th>結果</th><td>サイクルタイムが Issue と Project ボードに自動記録される</td></tr><tr class="wf-gherkin-then"><th>かつ</th><td>Retro Issue と改善アクションが次スプリントのバックログに積まれる</td></tr></table></details></section>
 <h2 id="screens">画面カタログ</h2>
 <section class="wf-screen-section" id="screen-scaffold"><h3><span class="wf-screen-id">scaffold</span>導入コマンド（対話プロンプト）</h3><p class="wf-screen-note">対象プロジェクトのルートで実行する。引数を省くと対話プロンプトで補完される。既存ファイルは上書きしない。</p><p class="wf-screen-flows">登場するフロー: <a class="wf-tag" href="#flow-DF-101">DF-101 新規プロジェクトに開発体制を導入する</a></p><div class="wf-frame-wrap wf-terminal"><div class="wf-frame"><div class="wf-terminal-bar"><span></span><span></span><span></span><i>導入コマンド（対話プロンプト）</i></div><div class="wf-el wf-console"><div class="wf-console-label">実行と対話<sup class="wf-note-mark">①</sup></div><pre><span class="wf-console-cmd">$ pnpm create dev-framework</span>
 <span class="wf-console-prompt">? GitHub オーナー名: yyamamoto95</span>
@@ -231,6 +275,8 @@ h2 { border-bottom: 3px solid var(--accent); padding-bottom: 6px; margin-top: 48
 <div class="wf-el wf-list"><div class="wf-list-label">フレームワークの核（変更は本体へPR還流）</div><ul><li>sprint-protocol.md — 1日1スプリント・SSOTマップ</li><li>workflows/ — プロセス系CI 7本</li><li>skills/ — /branch /commit /pr /sprint-start 等 9本</li></ul></div>
 <div class="wf-el wf-list"><div class="wf-list-label">必ず書く（あなたのプロダクトの中身）</div><ul><li>spec/ — プロダクト仕様・BDDストーリー</li><li>decisions/ — ADR</li><li>design/ — UI/UX・データモデル</li></ul></div>
 <p class="wf-el wf-text wf-muted">CUSTOMIZATION.md に「どこを変え、どこを変えないか」の分類表がある</p></div></div></section>
+
+
 </main>
 <footer class="wf-doc-footer">Generated by flow-wireframe — 定義(JSON)と出力(HTML)は1対1で対応します</footer>
 </body>
